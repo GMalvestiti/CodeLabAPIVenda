@@ -1,6 +1,6 @@
-# CodeLabAPIFinanceiro
+# CodeLabAPIVenda
 
-API de Financeiro do CodeLab.
+API de Venda do CodeLab.
 
 ## Development
 
