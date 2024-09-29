@@ -34,7 +34,7 @@ export class VendaItem {
   @ManyToOne(() => Venda, (venda) => venda.id)
   @JoinColumn({
     name: 'idVenda',
-    foreignKeyConstraintName: 'fk_venda',
+    foreignKeyConstraintName: 'fk_venda_item',
   })
   venda: Venda;
 

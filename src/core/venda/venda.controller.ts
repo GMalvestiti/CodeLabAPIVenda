@@ -20,7 +20,7 @@ import { CreateVendaDto } from './dto/create-venda.dto';
 import { Venda } from './entities/venda.entity';
 import { UpdateVendaDto } from './dto/update-venda.dto';
 
-@Controller('venda')
+@Controller('')
 export class VendaController {
   private readonly logger = new Logger(VendaController.name);
 

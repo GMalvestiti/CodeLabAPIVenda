@@ -9,7 +9,7 @@ define(Venda, () => {
   venda.idPessoa = faker.number.int({ max: 20 });
   venda.idUsuarioLancamento = faker.number.int({ max: 20 });
   venda.valorTotal = faker.number.float({ min: 0, max: 1000 });
-  venda.formaPagamento = faker.number.int({ max: 3 });
+  venda.formaPagamento = faker.number.int({ min: 1, max: 8 });
   venda.itens = [];
 
   return new Venda(venda);

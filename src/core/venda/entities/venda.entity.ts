@@ -29,13 +29,13 @@ export class Venda {
   @Column({ nullable: false })
   formaPagamento: number;
 
-  @OneToMany(() => VendaItem, (venda) => venda.idVenda, {
+  @OneToMany(() => VendaItem, (vendaitem) => vendaitem.venda, {
     eager: true,
     onDelete: 'CASCADE',
     cascade: ['insert', 'update'],
     orphanedRowAction: 'delete',
   })
-  itens: VendaItem[];
+  vendaitem: VendaItem[];
 
   constructor(createVendaDto: CreateVendaDto | UpdateVendaDto) {
     Object.assign(this, createVendaDto);
