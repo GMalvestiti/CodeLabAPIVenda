@@ -75,8 +75,8 @@ export class VendaService {
 
     await this.repositoryVendaItem.delete({ idVenda: id });
 
-    for (const item in updateVendaDto.itens) {
-      Object.assign(updateVendaDto.itens[item], { idVenda: id });
+    for (const item in updateVendaDto.vendaitem) {
+      Object.assign(updateVendaDto.vendaitem[item], { idVenda: id });
     }
 
     return await this.repository.save(updateVendaDto);

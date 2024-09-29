@@ -2,9 +2,6 @@ import { IsNotEmpty } from 'class-validator';
 import { EMensagem } from '../../../shared/enums/mensagem.enum';
 
 export class CreateVendaItemDto {
-  @IsNotEmpty({ message: `idVenda ${EMensagem.NAO_PODE_SER_VAZIO}` })
-  idVenda: number;
-
   @IsNotEmpty({ message: `idProduto ${EMensagem.NAO_PODE_SER_VAZIO}` })
   idProduto: number;
 

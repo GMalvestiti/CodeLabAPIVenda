@@ -19,7 +19,7 @@ export class CreateVendaDto {
   @IsNotEmpty({ message: `formaPagamento ${EMensagem.NAO_PODE_SER_VAZIO}` })
   formaPagamento: number;
 
-  @IsArray({ message: `itens ${EMensagem.TIPO_INVALIDO}` })
+  @IsArray({ message: `vendaitem ${EMensagem.TIPO_INVALIDO}` })
   @Type(() => CreateVendaItemDto)
-  itens: CreateVendaItemDto[] | UpdateVendaItemDto[];
+  vendaitem: CreateVendaItemDto[] | UpdateVendaItemDto[];
 }
