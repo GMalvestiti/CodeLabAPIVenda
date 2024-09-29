@@ -60,18 +60,15 @@ export class VendaController {
     return new HttpResponse<Venda>(data);
   }
 
-  /*@Patch(':id')
+  @Patch(':id')
   async update(
     @Param('id') id: number,
     @Body() updateVendaDto: UpdateVendaDto,
   ): Promise<IResponse<Venda>> {
-    const data = await this.vendaService.update(
-      id,
-      updateVendaDto,
-    );
+    const data = await this.vendaService.update(id, updateVendaDto);
 
     return new HttpResponse<Venda>(data).onUpdate();
-  }*/
+  }
 
   @Delete(':id')
   async delete(@Param('id') id: number): Promise<IResponse<boolean>> {
