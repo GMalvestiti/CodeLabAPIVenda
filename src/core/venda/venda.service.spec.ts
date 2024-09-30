@@ -1,35 +1,79 @@
-import { HttpException } from '@nestjs/common';
+import { HttpException, HttpStatus } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EMensagem } from '../../shared/enums/mensagem.enum';
-import { ContaReceberService } from './venda.service';
-import { ContaReceber } from './entities/venda.entity';
+import { IFindAllFilter } from '../../shared/interfaces/find-all-filter.interface';
+import { IFindAllOrder } from '../../shared/interfaces/find-all-order.interface';
+import { VendaItem } from './entities/venda-item.entity';
+import { Venda } from './entities/venda.entity';
+import { VendaService } from './venda.service';
+import { CreateVendaDto } from './dto/create-venda.dto';
+import { UpdateVendaDto } from './dto/update-venda.dto';
 
-describe('ContaReceberService', () => {
-  let service: ContaReceberService;
-  let repository: Repository<ContaReceber>;
+const mockCreateVendaDto: CreateVendaDto = {
+  idPessoa: 1,
+  idUsuarioLancamento: 1,
+  valorTotal: 100.0,
+  formaPagamento: 1,
+  vendaitem: [
+    {
+      idProduto: 1,
+      quantidade: 2,
+      precoVenda: 50.0,
+      valorTotal: 100.0,
+    },
+  ],
+};
+
+const mockUpdateVendaDto: UpdateVendaDto = Object.assign(mockCreateVendaDto, {
+  id: 1,
+});
+
+const mockVenda: Venda = new Venda(mockUpdateVendaDto);
+
+const mockFindAllOrder: IFindAllOrder = {
+  column: 'id',
+  sort: 'asc',
+};
+
+const mockFindAllFilter: IFindAllFilter = {
+  column: 'id',
+  value: 1,
+};
+
+describe('VendaService', () => {
+  let service: VendaService;
+  let repository: Repository<Venda>;
+  let repositoryVendaItem: Repository<VendaItem>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        ContaReceberService,
+        VendaService,
         {
-          provide: getRepositoryToken(ContaReceber),
+          provide: getRepositoryToken(Venda),
           useValue: {
             create: jest.fn(),
             save: jest.fn(),
             findOne: jest.fn(),
-            find: jest.fn(),
+            findAndCount: jest.fn(),
+            delete: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(VendaItem),
+          useValue: {
+            delete: jest.fn(),
           },
         },
       ],
     }).compile();
 
-    service = module.get<ContaReceberService>(ContaReceberService);
-
-    repository = module.get<Repository<ContaReceber>>(
-      getRepositoryToken(ContaReceber),
+    service = module.get<VendaService>(VendaService);
+    repository = module.get<Repository<Venda>>(getRepositoryToken(Venda));
+    repositoryVendaItem = module.get<Repository<VendaItem>>(
+      getRepositoryToken(VendaItem),
     );
   });
 
@@ -38,228 +82,107 @@ describe('ContaReceberService', () => {
   });
 
   describe('create', () => {
-    it('criar um novo usuário', async () => {
-      const createContaReceberDto = {
-        nome: 'Nome Teste',
-        email: 'nome.teste@teste.com',
-        senha: '123456',
-        ativo: true,
-        admin: true,
-        permissao: [],
-      };
-
-      const mockContaReceber = Object.assign(createContaReceberDto, { id: 1 });
-
-      const spyRepositorySave = jest
-        .spyOn(repository, 'save')
-        .mockReturnValue(Promise.resolve(mockContaReceber) as any);
-
-      const response = await service.create(createContaReceberDto);
-
-      expect(response).toEqual(mockContaReceber);
-      expect(spyRepositorySave).toHaveBeenCalled();
-    });
-
-    it('lançar erro ao repetir um email quando criar um novo conta-receber', async () => {
-      const createContaReceberDto = {
-        nome: 'Nome Teste',
-        email: 'nome.teste@teste.com',
-        senha: '123456',
-        ativo: true,
-        admin: true,
-        permissao: [],
-      };
-
-      const mockContaReceber = Object.assign(createContaReceberDto, { id: 1 });
-
-      const spyRepositoryFindOne = jest
-        .spyOn(repository, 'findOne')
-        .mockReturnValue(Promise.resolve(mockContaReceber) as any);
-
-      try {
-        await service.create(createContaReceberDto);
-      } catch (error: any) {
-        expect(error).toBeInstanceOf(HttpException);
-        expect(error.message).toBe(EMensagem.IMPOSSIVEL_CADASTRAR);
-        expect(spyRepositoryFindOne).toHaveBeenCalled();
-      }
+    it('should create a new venda', async () => {
+      jest.spyOn(repository, 'save').mockResolvedValue(mockVenda);
+      const response = await service.create(mockCreateVendaDto);
+      expect(response).toEqual(mockVenda);
     });
   });
 
   describe('findAll', () => {
-    it('obter uma listagem de usuários', async () => {
-      const mockListaContaReceber = [
-        {
-          id: 1,
-          nome: 'Nome Teste',
-          email: 'nome.teste@teste.com',
-          senha: '123456',
-          ativo: true,
-          admin: true,
-          permissao: [],
-        },
-      ];
+    it('should return a list of vendas', async () => {
+      const mockListaVendas = [mockVenda];
+      jest
+        .spyOn(repository, 'findAndCount')
+        .mockResolvedValue([mockListaVendas, mockListaVendas.length]);
 
-      const spyRepositoryFindOne = jest
-        .spyOn(repository, 'find')
-        .mockReturnValue(Promise.resolve(mockListaContaReceber) as any);
+      const response = await service.findAll(
+        0,
+        10,
+        mockFindAllOrder,
+        mockFindAllFilter,
+      );
 
-      const response = await service.findAll(1, 10);
-
-      expect(response).toEqual(mockListaContaReceber);
-      expect(spyRepositoryFindOne).toHaveBeenCalled();
+      expect(response.data).toEqual(mockListaVendas);
+      expect(response.count).toEqual(mockListaVendas.length);
     });
   });
 
   describe('findOne', () => {
-    it('obter um usuário', async () => {
-      const mockContaReceber = {
-        id: 1,
-        nome: 'Nome Teste',
-        email: 'nome.teste@teste.com',
-        senha: '123456',
-        ativo: true,
-        admin: true,
-        permissao: [],
-      };
-
-      const spyRepositoryFindOne = jest
-        .spyOn(repository, 'findOne')
-        .mockReturnValue(Promise.resolve(mockContaReceber) as any);
-
-      const response = await service.findOne(1);
-
-      expect(response).toEqual(mockContaReceber);
-      expect(spyRepositoryFindOne).toHaveBeenCalled();
+    it('should return a venda', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue(mockVenda);
+      const response = await service.findOne(mockVenda.id);
+      expect(response).toEqual(mockVenda);
     });
   });
 
   describe('update', () => {
-    it('alterar um usuário', async () => {
-      const updateContaReceberDto = {
-        id: 1,
-        nome: 'Nome Teste',
-        email: 'nome.teste@teste.com',
-        senha: '123456',
-        ativo: true,
-        admin: true,
-        permissao: [],
-      };
-
-      const mockContaReceber = Object.assign(updateContaReceberDto, {});
-
-      const spyRepositoryFindOne = jest
-        .spyOn(repository, 'findOne')
-        .mockReturnValue(Promise.resolve(mockContaReceber) as any);
-
-      const spyRepositorySave = jest
-        .spyOn(repository, 'save')
-        .mockReturnValue(Promise.resolve(mockContaReceber) as any);
-
-      const response = await service.update(1, updateContaReceberDto);
-
-      expect(response).toEqual(updateContaReceberDto);
-      expect(spyRepositoryFindOne).toHaveBeenCalled();
-      expect(spyRepositorySave).toHaveBeenCalled();
+    it('should update a venda', async () => {
+      jest.spyOn(repository, 'save').mockResolvedValue(mockVenda);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(mockVenda);
+      const response = await service.update(
+        mockUpdateVendaDto.id,
+        mockUpdateVendaDto,
+      );
+      expect(response).toEqual(mockVenda);
     });
 
-    it('lançar erro ao enviar ids diferentes quando alterar um conta-receber', async () => {
-      const updateContaReceberDto = {
-        id: 1,
-        nome: 'Nome Teste',
-        email: 'nome.teste@teste.com',
-        senha: '123456',
-        ativo: true,
-        admin: true,
-        permissao: [],
-      };
-
-      try {
-        await service.update(2, updateContaReceberDto);
-      } catch (error: any) {
-        expect(error).toBeInstanceOf(HttpException);
-        expect(error.message).toBe(EMensagem.IDS_DIFERENTES);
-      }
+    it('should throw an error when ids are different', async () => {
+      await expect(service.update(2, mockUpdateVendaDto)).rejects.toThrow(
+        new HttpException(EMensagem.IDS_DIFERENTES, HttpStatus.NOT_ACCEPTABLE),
+      );
     });
 
-    it('lançar erro ao repetir um email já utilizado quando alterar um conta-receber', async () => {
-      const updateContaReceberDto = {
-        id: 1,
-        nome: 'Nome Teste',
-        email: 'nome.teste@teste.com',
-        senha: '123456',
-        ativo: true,
-        admin: true,
-        permissao: [],
-      };
+    it('should delete venda items before updating', async () => {
+      jest.spyOn(repositoryVendaItem, 'delete').mockResolvedValue(null);
+      jest.spyOn(repository, 'save').mockResolvedValue(mockVenda);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(mockVenda);
 
-      const mockContaReceberFindOne = {
-        id: 2,
-        nome: 'Nome Teste',
-        email: 'nome.teste@teste.com',
-        senha: 'abcdef',
-        ativo: true,
-        admin: true,
-        permissao: [],
-      };
+      const response = await service.update(
+        mockUpdateVendaDto.id,
+        mockUpdateVendaDto,
+      );
 
-      const spyRepositoryFindOne = jest
-        .spyOn(repository, 'findOne')
-        .mockReturnValue(Promise.resolve(mockContaReceberFindOne) as any);
+      expect(repositoryVendaItem.delete).toHaveBeenCalledWith({
+        idVenda: mockUpdateVendaDto.id,
+      });
+      expect(response).toEqual(mockVenda);
+    });
 
-      try {
-        await service.update(1, updateContaReceberDto);
-      } catch (error: any) {
-        expect(error).toBeInstanceOf(HttpException);
-        expect(error.message).toBe(EMensagem.IMPOSSIVEL_ALTERAR);
-        expect(spyRepositoryFindOne).toHaveBeenCalled();
-      }
+    it('should throw an error when venda is not found', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
+
+      await expect(
+        service.update(mockUpdateVendaDto.id, mockUpdateVendaDto),
+      ).rejects.toThrow(
+        new HttpException(
+          EMensagem.IMPOSSIVEL_ALTERAR,
+          HttpStatus.NOT_ACCEPTABLE,
+        ),
+      );
     });
   });
 
-  describe('unactivate', () => {
-    it('desativar um usuário', async () => {
-      const mockContaReceberFindOne = {
-        id: 1,
-        nome: 'Nome Teste',
-        email: 'nome.teste@teste.com',
-        senha: '123456',
-        ativo: true,
-        admin: true,
-        permissao: [],
-      };
+  describe('delete', () => {
+    it('should delete a venda', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue(mockVenda);
+      jest
+        .spyOn(repository, 'delete')
+        .mockResolvedValue({ affected: 1 } as any);
 
-      const spyRepositoryFindOne = jest
-        .spyOn(repository, 'findOne')
-        .mockReturnValue(Promise.resolve(mockContaReceberFindOne) as any);
-
-      const mockContaReceberSave = Object.assign(mockContaReceberFindOne, {
-        ativo: false,
-      });
-
-      const spyRepositorySave = jest
-        .spyOn(repository, 'save')
-        .mockReturnValue(Promise.resolve(mockContaReceberSave) as any);
-
-      const response = await service.unactivate(1);
-
-      expect(response).toEqual(false);
-      expect(spyRepositoryFindOne).toHaveBeenCalled();
-      expect(spyRepositorySave).toHaveBeenCalled();
+      const result = await service.delete(mockVenda.id);
+      expect(result).toBe(true);
     });
 
-    it('lançar erro ao não encontrar o conta-receber usando o id quando alterar um conta-receber', async () => {
-      const spyRepositoryFindOne = jest
-        .spyOn(repository, 'findOne')
-        .mockReturnValue(Promise.resolve(null) as any);
+    it('should throw an error when venda is not found', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
 
-      try {
-        await service.unactivate(1);
-      } catch (error: any) {
-        expect(error).toBeInstanceOf(HttpException);
-        expect(error.message).toBe(EMensagem.IMPOSSIVEL_ALTERAR);
-        expect(spyRepositoryFindOne).toHaveBeenCalled();
-      }
+      await expect(service.delete(mockVenda.id)).rejects.toThrow(
+        new HttpException(
+          EMensagem.IMPOSSIVEL_EXCLUIR,
+          HttpStatus.NOT_ACCEPTABLE,
+        ),
+      );
     });
   });
 });

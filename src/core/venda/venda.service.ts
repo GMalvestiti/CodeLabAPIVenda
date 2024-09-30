@@ -7,9 +7,9 @@ import { IFindAllFilter } from '../../shared/interfaces/find-all-filter.interfac
 import { IFindAllOrder } from '../../shared/interfaces/find-all-order.interface';
 import { VendaItem } from './entities/venda-item.entity';
 import { Venda } from './entities/venda.entity';
-import { IResponse } from 'src/shared/interfaces/response.interface';
 import { UpdateVendaDto } from './dto/update-venda.dto';
 import { CreateVendaDto } from './dto/create-venda.dto';
+import { IResponse } from '../../shared/interfaces/response.interface';
 
 @Injectable()
 export class VendaService {

@@ -1,31 +1,68 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { HttpResponse } from '../../shared/classes/http-response';
 import { EMensagem } from '../../shared/enums/mensagem.enum';
-import { ContaReceberController } from './venda.controller';
-import { ContaReceberService } from './venda.service';
+import { IFindAllFilter } from '../../shared/interfaces/find-all-filter.interface';
+import { IFindAllOrder } from '../../shared/interfaces/find-all-order.interface';
+import { VendaController } from './venda.controller';
+import { VendaService } from './venda.service';
+import { CreateVendaDto } from './dto/create-venda.dto';
+import { UpdateVendaDto } from './dto/update-venda.dto';
+import { Venda } from './entities/venda.entity';
 
-describe('ContaReceberController', () => {
-  let controller: ContaReceberController;
-  let service: ContaReceberService;
+const mockCreateVendaDto: CreateVendaDto = {
+  idPessoa: 1,
+  idUsuarioLancamento: 1,
+  valorTotal: 100.0,
+  formaPagamento: 1,
+  vendaitem: [
+    {
+      idProduto: 1,
+      quantidade: 2,
+      precoVenda: 50.0,
+      valorTotal: 100.0,
+    },
+  ],
+};
+
+const mockUpdateVendaDto: UpdateVendaDto = Object.assign(mockCreateVendaDto, {
+  id: 1,
+});
+
+const mockVenda: Venda = new Venda(mockUpdateVendaDto);
+
+const mockFindAllOrder: IFindAllOrder = {
+  column: 'id',
+  sort: 'asc',
+};
+
+const mockFindAllFilter: IFindAllFilter = {
+  column: 'id',
+  value: 1,
+};
+
+describe('VendaController', () => {
+  let controller: VendaController;
+  let service: VendaService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [ContaReceberController],
+      controllers: [VendaController],
       providers: [
         {
-          provide: ContaReceberService,
+          provide: VendaService,
           useValue: {
             create: jest.fn(),
             findAll: jest.fn(),
             findOne: jest.fn(),
             update: jest.fn(),
-            unactivate: jest.fn(),
+            delete: jest.fn(),
           },
         },
       ],
     }).compile();
 
-    controller = module.get<ContaReceberController>(ContaReceberController);
-    service = module.get<ContaReceberService>(ContaReceberService);
+    controller = module.get<VendaController>(VendaController);
+    service = module.get<VendaService>(VendaService);
   });
 
   it('should be defined', () => {
@@ -33,114 +70,85 @@ describe('ContaReceberController', () => {
   });
 
   describe('create', () => {
-    it('criar um novo usuário', async () => {
-      const createContaReceberDto = {
-        nome: 'Nome Teste',
-        email: 'nome.teste@teste.com',
-        senha: '123456',
-        ativo: true,
-        admin: true,
-        permissao: [],
-      };
-
-      const mockContaReceber = Object.assign(createContaReceberDto, { id: 1 });
-
+    it('should create a new venda', async () => {
       const spyServiceCreate = jest
         .spyOn(service, 'create')
-        .mockReturnValue(Promise.resolve(mockContaReceber) as any);
+        .mockReturnValue(Promise.resolve(mockVenda) as any);
 
-      const response = await controller.create(createContaReceberDto);
+      const response = await controller.create(mockCreateVendaDto);
 
+      expect(response).toBeInstanceOf(HttpResponse);
       expect(response.message).toEqual(EMensagem.SALVO_SUCESSO);
-      expect(response.data).toEqual(mockContaReceber);
+      expect(response.data).toEqual(mockVenda);
       expect(spyServiceCreate).toHaveBeenCalled();
     });
   });
 
   describe('findAll', () => {
-    it('obter uma listagem de usuários', async () => {
-      const mockListaContaReceber = [
-        {
-          id: 1,
-          nome: 'Nome Teste',
-          email: 'nome.teste@teste.com',
-          senha: '123456',
-          ativo: true,
-          admin: true,
-          permissao: [],
-        },
-      ];
+    it('should return a list of vendas', async () => {
+      const mockListaVendas: Venda[] = [mockVenda];
 
-      const spyServiceFindAll = jest
-        .spyOn(service, 'findAll')
-        .mockReturnValue(Promise.resolve(mockListaContaReceber) as any);
+      const spyServiceFindAll = jest.spyOn(service, 'findAll').mockReturnValue(
+        Promise.resolve({
+          data: mockListaVendas,
+          count: mockListaVendas.length,
+        }) as any,
+      );
 
-      const response = await controller.findAll(1, 10);
+      const response = await controller.findAll(
+        0,
+        10,
+        mockFindAllOrder,
+        mockFindAllFilter,
+      );
 
-      expect(response.message).toEqual(undefined);
-      expect(response.data).toEqual(mockListaContaReceber);
+      expect(response.data).toEqual(mockListaVendas);
+      expect(response.count).toEqual(mockListaVendas.length);
       expect(spyServiceFindAll).toHaveBeenCalled();
     });
   });
 
   describe('findOne', () => {
-    it('obter um usuário', async () => {
-      const mockContaReceber = {
-        id: 1,
-        nome: 'Nome Teste',
-        email: 'nome.teste@teste.com',
-        senha: '123456',
-        ativo: true,
-        admin: true,
-        permissao: [],
-      };
+    it('should return a venda', async () => {
       const spyServiceFindOne = jest
         .spyOn(service, 'findOne')
-        .mockReturnValue(Promise.resolve(mockContaReceber) as any);
+        .mockReturnValue(Promise.resolve(mockVenda) as any);
 
       const response = await controller.findOne(1);
 
-      expect(response.message).toEqual(undefined);
-      expect(response.data).toEqual(mockContaReceber);
       expect(spyServiceFindOne).toHaveBeenCalled();
+      expect(response.data).toEqual(mockVenda);
     });
   });
 
   describe('update', () => {
-    it('alterar um usuário', async () => {
-      const mockContaReceber = {
-        id: 1,
-        nome: 'Nome Teste',
-        email: 'nome.teste@teste.com',
-        senha: '123456',
-        ativo: true,
-        admin: true,
-        permissao: [],
-      };
-
+    it('should update a venda', async () => {
       const spyServiceUpdate = jest
         .spyOn(service, 'update')
-        .mockReturnValue(Promise.resolve(mockContaReceber) as any);
+        .mockReturnValue(Promise.resolve(mockVenda) as any);
 
-      const response = await controller.update(1, mockContaReceber);
+      const response = await controller.update(
+        mockUpdateVendaDto.id,
+        mockUpdateVendaDto,
+      );
 
-      expect(response.message).toEqual(EMensagem.ATUALIZADO_SUCESSO);
-      expect(response.data).toEqual(mockContaReceber);
       expect(spyServiceUpdate).toHaveBeenCalled();
+      expect(response.message).toEqual(EMensagem.ATUALIZADO_SUCESSO);
+      expect(response.data).toEqual(mockVenda);
     });
   });
 
-  describe('unactivate', () => {
-    it('desativar um usuário', async () => {
-      const spyServiceUpdate = jest
-        .spyOn(service, 'unactivate')
-        .mockReturnValue(Promise.resolve(false) as any);
+  describe('delete', () => {
+    it('should delete a venda', async () => {
+      const spyServiceDelete = jest
+        .spyOn(service, 'delete')
+        .mockReturnValue(Promise.resolve(true) as any);
 
-      const response = await controller.unactivate(1);
+      const response = await controller.delete(1);
 
+      expect(spyServiceDelete).toHaveBeenCalled();
       expect(response.message).toEqual(EMensagem.DESATIVADO_SUCESSO);
-      expect(response.data).toEqual(false);
-      expect(spyServiceUpdate).toHaveBeenCalled();
+      expect(response.data).toEqual(true);
     });
   });
 });
